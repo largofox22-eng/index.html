@@ -113,18 +113,22 @@ document.getElementById("f").addEventListener("submit",async e=>{
   const total=calc();
   const btn=document.querySelector(".send");
   btn.disabled=true;btn.textContent="Надсилаємо…";
-  const body=new URLSearchParams({
-    product_name:picked.map(p=>p.n).join(", "),
-    quantity:picked.map(p=>p.q).join(", "),
-    price:picked.map(p=>p.p).join(", "),
-    total_price:String(total),
+  const orderId="ORD-"+Date.now().toString(36).toUpperCase();
+  const rows=picked.map(p=>new URLSearchParams({
+    order_id:orderId,
+    product_name:p.n,
+    quantity:String(p.q),
+    price:String(p.p),
+    line_total:String(p.q*p.p),
+    order_total:String(total),
     first_name:fn.value.trim(),
     last_name:ln.value.trim(),
     phone:ph.value.trim()
-  });
+  }));
   try{
+    // окремий запит на кожен товар = окремий рядок у таблиці
     // no-cors: Zapier приймає запит, але браузер не показує відповідь
-    await fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",body});
+    await Promise.all(rows.map(body=>fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",body})));
   }catch(err){
     btn.disabled=false;btn.textContent="Замовити";
     document.getElementById("contactErr").textContent="Не вдалося надіслати замовлення. Перевірте інтернет і спробуйте ще раз.";
@@ -132,7 +136,7 @@ document.getElementById("f").addEventListener("submit",async e=>{
   }
   const d=document.getElementById("done");
   const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  d.innerHTML=`<h2>Дякуємо, ${esc(fn.value.trim())}!</h2><p>Ваше замовлення прийнято:</p><ul>${picked.map(p=>`<li>${p.n} — ${p.q} шт × ${p.p} грн = ${p.q*p.p} грн</li>`).join("")}</ul><p><b>Разом: ${total} грн</b></p><p>Телефон: ${esc(ph.value.trim())}</p>`;
+  d.innerHTML=`<h2>Дякуємо, ${esc(fn.value.trim())}!</h2><p>Ваше замовлення <b>${orderId}</b> прийнято:</p><ul>${picked.map(p=>`<li>${p.n} — ${p.q} шт × ${p.p} грн = ${p.q*p.p} грн</li>`).join("")}</ul><p><b>Разом: ${total} грн</b></p><p>Телефон: ${esc(ph.value.trim())}</p>`;
   d.hidden=false;document.getElementById("f").hidden=true;d.scrollIntoView();
 });
 </script>
