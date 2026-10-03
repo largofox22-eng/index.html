@@ -105,14 +105,16 @@ document.getElementById("f").addEventListener("submit",async e=>{
   const bad=[];
   if(!fn.value.trim())bad.push(fn);
   if(!ln.value.trim())bad.push(ln);
-  if(digits.length<10||digits.length>13||!/^[\d\s()+\-]+$/.test(ph.value))bad.push(ph);
+  if(digits.length<10||digits.length>13)bad.push(ph);
   bad.forEach(el=>el.classList.add("bad"));
-  document.getElementById("contactErr").textContent=bad.length?"Заповніть ім'я, прізвище та коректний номер телефону.":"";
+  document.getElementById("contactErr").textContent=bad.length?"Заповніть ім'я, прізвище та номер телефону (10-12 цифр, наприклад 0501234567).":"";
   if(bad.length)ok=false;
   if(!ok)return;
   const total=calc();
   const btn=document.querySelector(".send");
   btn.disabled=true;btn.textContent="Надсилаємо…";
+  let phoneNorm="+"+digits;
+  if(digits.length===10&&digits[0]==="0")phoneNorm="+38"+digits;
   const orderId="ORD-"+Date.now().toString(36).toUpperCase();
   const rows=picked.map(p=>new URLSearchParams({
     order_id:orderId,
@@ -123,7 +125,7 @@ document.getElementById("f").addEventListener("submit",async e=>{
     order_total:String(total),
     first_name:fn.value.trim(),
     last_name:ln.value.trim(),
-    phone:ph.value.trim()
+    phone:phoneNorm
   }));
   try{
     // окремий запит на кожен товар = окремий рядок у таблиці
