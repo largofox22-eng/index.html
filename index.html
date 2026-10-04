@@ -36,3 +36,67 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline
 .ok{background:var(--card);border:1px solid var(--accent);border-radius:10px;padding:18px}
 .ok ul{padding-left:18px}
 [hidden]{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>Замовлення товару</h1>
+<p class="sub">Оберіть товари, вкажіть кількість і залиште контакти.</p>
+
+<form id="f" novalidate>
+<fieldset>
+<legend>Товари</legend>
+<div id="items"></div>
+<p class="err" id="itemsErr" role="alert"></p>
+</fieldset>
+
+<fieldset>
+<legend>Контактні дані</legend>
+<label class="f">Ім'я<input id="fn" autocomplete="given-name" required></label>
+<label class="f">Прізвище<input id="ln" autocomplete="family-name" required></label>
+<label class="f">Номер телефону<input id="ph" type="tel" autocomplete="tel" placeholder="+380 50 123 45 67" required></label>
+<p class="err" id="contactErr" role="alert"></p>
+</fieldset>
+
+<div class="total"><span>Разом</span><span id="total">0 грн</span></div>
+<button type="submit" class="send">Замовити</button>
+</form>
+
+<section class="ok" id="done" hidden></section>
+</main>
+
+<script>
+// Вставте сюди URL вебхука з Zapier (Webhooks by Zapier → Catch Hook)
+const WEBHOOK_URL="https://hooks.zapier.com/hooks/catch/27834950/4mwrqcf/";
+const products=[{n:"Товар 1",p:100},{n:"Товар 2",p:200},{n:"Товар 3",p:300},{n:"Товар 4",p:400}];
+const box=document.getElementById("items");
+const state=products.map(()=>({on:false,q:1}));
+
+products.forEach((pr,i)=>{
+  const row=document.createElement("div");row.className="item";
+  row.innerHTML=`<input type="checkbox" id="c${i}" aria-label="${pr.n}">
+  <label for="c${i}"><span class="name">${pr.n}</span><br><span class="price">${pr.p} грн</span></label>
+  <div class="qty"><button type="button" aria-label="Менше">−</button><input type="number" min="1" max="99" value="1" aria-label="Кількість"><button type="button" aria-label="Більше">+</button></div>`;
+  const cb=row.querySelector("input[type=checkbox]"),num=row.querySelector("input[type=number]"),[minus,plus]=row.querySelectorAll("button");
+  const sync=()=>{state[i].q=Math.max(1,Math.min(99,parseInt(num.value)||1));num.value=state[i].q;row.classList.toggle("on",state[i].on);calc()};
+  cb.onchange=()=>{state[i].on=cb.checked;if(cb.checked)state[i].q=1,num.value=1;sync()};
+  minus.onclick=()=>{num.value=(parseInt(num.value)||1)-1;sync()};
+  plus.onclick=()=>{num.value=(parseInt(num.value)||0)+1;sync()};
+  num.onchange=sync;
+  box.appendChild(row);
+});
+
+function calc(){
+  const t=state.reduce((s,x,i)=>s+(x.on?x.q*products[i].p:0),0);
+  document.getElementById("total").textContent=t+" грн";
+  if(state.some(x=>x.on))document.getElementById("itemsErr").textContent="";
+  return t;
+}
+
+document.getElementById("f").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const fn=document.getElementById("fn"),ln=document.getElementById("ln"),ph=document.getElementById("ph");
+  let ok=true;
+  const picked=state.map((x,i)=>x.on?{...products[i],q:x.q}:null).filter(Boolean);
+  document.getElementById("itemsErr").textContent=picked.length?"":"Оберіть щонайменше один товар.";
+  if(!pic
